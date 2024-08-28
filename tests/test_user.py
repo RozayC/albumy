@@ -196,6 +196,8 @@ class UserTestCase(BaseTestCase):
         self.login()
         response = self.client.post(url_for('user.privacy_setting'), data=dict(
             public_collections='',
+            automatic_description_generation='',
+            automatic_tagging='',
         ), follow_redirects=True)
         data = response.get_data(as_text=True)
         self.assertIn('Privacy settings updated.', data)

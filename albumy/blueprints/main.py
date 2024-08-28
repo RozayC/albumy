@@ -132,16 +132,17 @@ def upload():
             filename_m=filename_m,
             author=current_user._get_current_object()
         )
-        tags = "tag1 tag2 tag3 tag4"
-        for name in tags.split():
-            tag = Tag.query.filter_by(name=name).first()
-            if tag is None:
-                tag = Tag(name=name)
-                db.session.add(tag)
-                db.session.commit()
-            if tag not in photo.tags:
-                photo.tags.append(tag)
-                db.session.commit()
+        if current_user.automatic_tagging:
+            tags = "tag1 tag2 tag3 tag4"
+            for name in tags.split():
+                tag = Tag.query.filter_by(name=name).first()
+                if tag is None:
+                    tag = Tag(name=name)
+                    db.session.add(tag)
+                    db.session.commit()
+                if tag not in photo.tags:
+                    photo.tags.append(tag)
+                    db.session.commit()
         db.session.add(photo)
         db.session.commit()
     return render_template('main/upload.html')
