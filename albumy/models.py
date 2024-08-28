@@ -103,6 +103,8 @@ class User(db.Model, UserMixin):
     active = db.Column(db.Boolean, default=True)
 
     public_collections = db.Column(db.Boolean, default=True)
+    #automatic_description_generation = db.Column(db.Boolean, default=True)
+    #automatic_tagging = db.Column(db.Boolean, default=True)
     receive_comment_notification = db.Column(db.Boolean, default=True)
     receive_follow_notification = db.Column(db.Boolean, default=True)
     receive_collect_notification = db.Column(db.Boolean, default=True)

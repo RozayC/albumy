@@ -71,6 +71,8 @@ class NotificationSettingForm(FlaskForm):
 
 class PrivacySettingForm(FlaskForm):
     public_collections = BooleanField('Public my collection')
+    #automatic_description_generation = BooleanField('Automatic Description Generation')
+    #automatic_tagging = BooleanField('Automatic Tagging')
     submit = SubmitField()
 
 

@@ -223,6 +223,8 @@ def privacy_setting():
     form = PrivacySettingForm()
     if form.validate_on_submit():
         current_user.public_collections = form.public_collections.data
+        #current_user.automatic_description_generation = form.automatic_description_generation.data
+        #current_user.automatic_tagging = form.automatic_tagging.data
         db.session.commit()
         flash('Privacy settings updated.', 'success')
         return redirect(url_for('.index', username=current_user.username))
