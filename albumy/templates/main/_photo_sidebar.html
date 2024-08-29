@@ -48,6 +48,7 @@
                     {{ render_field(description_form.description) }}
                     <a class="btn btn-light btn-sm" id="cancel-description">Cancel</a>
                     {{ render_field(description_form.submit, class='btn btn-success btn-sm') }}
+                    {{ render_field(description_form.use_ai_content, class='btn btn-secondary btn-sm') }}
                 </form>
             </div>
         {% endif %}
@@ -74,6 +75,7 @@
                     {{ render_field(tag_form.tag) }}
                     <a class="btn btn-light btn-sm" id="cancel-tag">Cancel</a>
                     {{ render_field(tag_form.submit, class='btn btn-success btn-sm') }}
+                    {{ render_field(tag_form.use_ai_content, class='btn btn-secondary btn-sm') }}
                 </form>
                 {% if photo.tags %}
                     <hr>

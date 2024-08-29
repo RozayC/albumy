@@ -126,14 +126,14 @@ def upload():
         filename_s = resize_image(f, filename, current_app.config['ALBUMY_PHOTO_SIZE']['small'])
         filename_m = resize_image(f, filename, current_app.config['ALBUMY_PHOTO_SIZE']['medium'])
         photo = Photo(
-            description = "AI generated description",
+            description = "AI generated description", # TODO: add ML modle
             filename=filename,
             filename_s=filename_s,
             filename_m=filename_m,
             author=current_user._get_current_object()
         )
         if current_user.automatic_tagging:
-            tags = "tag1 tag2 tag3 tag4"
+            tags = "tag1 tag2 tag3 tag4" # TODO: add ML modle
             for name in tags.split():
                 tag = Tag.query.filter_by(name=name).first()
                 if tag is None:
@@ -259,9 +259,16 @@ def edit_description(photo_id):
 
     form = DescriptionForm()
     if form.validate_on_submit():
-        photo.description = form.description.data
-        db.session.commit()
-        flash('Description updated.', 'success')
+        if form.submit.data:  
+            photo.description = form.description.data
+            db.session.commit()
+            flash('Description updated.', 'success')
+        
+        elif form.use_ai_content.data:  
+            ai_generated_description = "AI-generated description"  # TODO: add ML modle
+            photo.description = ai_generated_description
+            db.session.commit()
+            flash('AI-Generated description added.', 'success')
 
     flash_errors(form)
     return redirect(url_for('.show_photo', photo_id=photo_id))
@@ -304,16 +311,29 @@ def new_tag(photo_id):
 
     form = TagForm()
     if form.validate_on_submit():
-        for name in form.tag.data.split():
-            tag = Tag.query.filter_by(name=name).first()
-            if tag is None:
-                tag = Tag(name=name)
-                db.session.add(tag)
-                db.session.commit()
-            if tag not in photo.tags:
-                photo.tags.append(tag)
-                db.session.commit()
-        flash('Tag added.', 'success')
+        if form.submit.data:  
+            for name in form.tag.data.split():
+                tag = Tag.query.filter_by(name=name).first()
+                if tag is None:
+                    tag = Tag(name=name)
+                    db.session.add(tag)
+                    db.session.commit()
+                if tag not in photo.tags:
+                    photo.tags.append(tag)
+                    db.session.commit()
+            flash('Tag added.', 'success')
+        elif form.use_ai_content.data:  
+            ai_generated_description = "tag1 tag2 tag3 tag4"  # TODO: add ML modle
+            for name in ai_generated_description.split():
+                tag = Tag.query.filter_by(name=name).first()
+                if tag is None:
+                    tag = Tag(name=name)
+                    db.session.add(tag)
+                    db.session.commit()
+                if tag not in photo.tags:
+                    photo.tags.append(tag)
+                    db.session.commit()
+            flash('AI-Generated tags added.', 'success')
 
     flash_errors(form)
     return redirect(url_for('.show_photo', photo_id=photo_id))
