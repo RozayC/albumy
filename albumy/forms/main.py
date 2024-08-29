@@ -13,13 +13,13 @@ from wtforms.validators import DataRequired, Optional, Length
 class DescriptionForm(FlaskForm):
     description = TextAreaField('Description', validators=[Optional(), Length(0, 500)])
     submit = SubmitField()
-    use_ai_content = SubmitField('Generate by AI')
+    use_ai_content = SubmitField('AI')
 
 
 class TagForm(FlaskForm):
     tag = StringField('Add Tag (use space to separate)', validators=[Optional(), Length(0, 64)])
     submit = SubmitField()
-    use_ai_content = SubmitField('Generate by AI')
+    use_ai_content = SubmitField('AI')
 
 
 class CommentForm(FlaskForm):
