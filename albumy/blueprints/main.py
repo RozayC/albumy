@@ -18,6 +18,21 @@ from albumy.forms.main import DescriptionForm, TagForm, CommentForm
 from albumy.models import User, Photo, Tag, Follow, Collect, Comment, Notification
 from albumy.notifications import push_comment_notification, push_collect_notification
 from albumy.utils import rename_image, resize_image, redirect_back, flash_errors
+from azure.ai.vision.imageanalysis import ImageAnalysisClient
+from azure.ai.vision.imageanalysis.models import VisualFeatures
+from azure.core.credentials import AzureKeyCredential
+
+try:
+    azure_endpoint = os.getenv("AZURE_VISION_ENDPOINT")
+    azure_key = os.getenv("AZURE_VISION_KEY")
+except KeyError:
+    print("Missing environment variable 'AZURE_VISION_ENDPOINT' or 'AZURE_VISION_KEY'")
+    print("Set them before running this sample.")
+    exit()
+client = ImageAnalysisClient(
+    endpoint=azure_endpoint,
+    credential=AzureKeyCredential(azure_key)
+)
 
 main_bp = Blueprint('main', __name__)
 
@@ -122,27 +137,62 @@ def upload():
     if request.method == 'POST' and 'file' in request.files:
         f = request.files.get('file')
         filename = rename_image(f.filename)
-        f.save(os.path.join(current_app.config['ALBUMY_UPLOAD_PATH'], filename))
+        image_path = os.path.join(current_app.config['ALBUMY_UPLOAD_PATH'], filename)  # Full path to the uploaded image
+        f.save(image_path)
         filename_s = resize_image(f, filename, current_app.config['ALBUMY_PHOTO_SIZE']['small'])
         filename_m = resize_image(f, filename, current_app.config['ALBUMY_PHOTO_SIZE']['medium'])
-        photo = Photo(
-            description = "AI generated description", # TODO: add ML modle
-            filename=filename,
-            filename_s=filename_s,
-            filename_m=filename_m,
-            author=current_user._get_current_object()
-        )
+        with open(image_path, "rb") as image_file:
+            image_data = image_file.read()
+        # Automatic description
+        if current_user.automatic_description_generation:
+            try:
+                description_result = client.analyze(
+                    image_data=image_data,
+                    visual_features=[VisualFeatures.CAPTION],
+                    gender_neutral_caption=True,
+                )
+                if description_result.caption is not None:
+                    ai_generated_description = description_result.caption.text
+                else:
+                    ai_generated_description = ""
+            except Exception as e:
+                flash(f"Failed to generate AIdescription: {str(e)}", "danger")
+                ai_generated_description = ""
+            photo = Photo(
+                description = ai_generated_description,
+                filename=filename,
+                filename_s=filename_s,
+                filename_m=filename_m,
+                author=current_user._get_current_object()
+            )
+        else:
+            photo = Photo(
+                filename=filename,
+                filename_s=filename_s,
+                filename_m=filename_m,
+                author=current_user._get_current_object()
+            )
+        # Automatic tagging
         if current_user.automatic_tagging:
-            tags = "tag1 tag2 tag3 tag4" # TODO: add ML modle
-            for name in tags.split():
-                tag = Tag.query.filter_by(name=name).first()
-                if tag is None:
-                    tag = Tag(name=name)
-                    db.session.add(tag)
-                    db.session.commit()
-                if tag not in photo.tags:
-                    photo.tags.append(tag)
-                    db.session.commit()
+            try: 
+                tags_result = client.analyze(
+                    image_data=image_data,
+                    visual_features=[VisualFeatures.TAGS],
+                    gender_neutral_caption=True,
+                )
+                if tags_result.tags is not None:
+                    ai_generated_tags = [tag.name for tag in tags_result.tags.list]
+                    for name in ai_generated_tags:
+                        tag = Tag.query.filter_by(name=name).first()
+                        if tag is None:
+                            tag = Tag(name=name)
+                            db.session.add(tag)
+                            db.session.commit()
+                        if tag not in photo.tags:
+                            photo.tags.append(tag)
+                            db.session.commit()
+            except Exception as e:
+                flash(f"Failed to generate AI tags: {str(e)}", "danger")
         db.session.add(photo)
         db.session.commit()
     return render_template('main/upload.html')
