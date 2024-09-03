@@ -177,11 +177,11 @@ def upload():
             try: 
                 tags_result = client.analyze(
                     image_data=image_data,
-                    visual_features=[VisualFeatures.TAGS],
+                    visual_features=[VisualFeatures.OBJECTS],
                     gender_neutral_caption=True,
                 )
-                if tags_result.tags is not None:
-                    ai_generated_tags = [tag.name for tag in tags_result.tags.list]
+                if tags_result.objects is not None:
+                    ai_generated_tags = [tag.tags[0].name for tag in tags_result.objects.list]
                     for name in ai_generated_tags:
                         tag = Tag.query.filter_by(name=name).first()
                         if tag is None:
@@ -397,11 +397,11 @@ def new_tag(photo_id):
                     image_data = image_file.read()
                     tags_result = client.analyze(
                         image_data=image_data,
-                        visual_features=[VisualFeatures.TAGS],
+                        visual_features=[VisualFeatures.OBJECTS],
                         gender_neutral_caption=True,
                     )
-                    if tags_result.tags is not None:
-                        ai_generated_tags = [tag.name for tag in tags_result.tags.list]
+                    if tags_result.objects is not None:
+                        ai_generated_tags = [tag.tags[0].name for tag in tags_result.objects.list]
                         for name in ai_generated_tags:
                             tag = Tag.query.filter_by(name=name).first()
                             if tag is None:
