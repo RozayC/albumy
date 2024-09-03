@@ -28,6 +28,14 @@ or with Pipenv:
 $ pipenv install --dev
 $ pipenv shell
 ```
+set up AI endpoints and key:
+* create Azure account, set up Azure Computer Vision API
+* create a .env file in the root directory of Albumy
+* Add the following lines to your .env file:
+```
+AZURE_VISION_ENDPOINT="[your endpoint]"
+AZURE_VISION_KEY="[your key]"
+```
 generate fake data then run:
 ```
 $ flask forge
