@@ -137,7 +137,7 @@ def upload():
     if request.method == 'POST' and 'file' in request.files:
         f = request.files.get('file')
         filename = rename_image(f.filename)
-        image_path = os.path.join(current_app.config['ALBUMY_UPLOAD_PATH'], filename)  # Full path to the uploaded image
+        image_path = os.path.join(current_app.config['ALBUMY_UPLOAD_PATH'], filename)
         f.save(image_path)
         filename_s = resize_image(f, filename, current_app.config['ALBUMY_PHOTO_SIZE']['small'])
         filename_m = resize_image(f, filename, current_app.config['ALBUMY_PHOTO_SIZE']['medium'])
@@ -156,7 +156,7 @@ def upload():
                 else:
                     ai_generated_description = ""
             except Exception as e:
-                flash(f"Failed to generate AIdescription: {str(e)}", "danger")
+                flash(f"Failed to generate AI description: {str(e)}", "danger")
                 ai_generated_description = ""
             photo = Photo(
                 description = ai_generated_description,
@@ -306,6 +306,7 @@ def edit_description(photo_id):
     photo = Photo.query.get_or_404(photo_id)
     if current_user != photo.author and not current_user.can('MODERATE'):
         abort(403)
+    
 
     form = DescriptionForm()
     if form.validate_on_submit():
@@ -314,11 +315,27 @@ def edit_description(photo_id):
             db.session.commit()
             flash('Description updated.', 'success')
         
+        # Automatic description
         elif form.use_ai_content.data:  
-            ai_generated_description = "AI-generated description"  # TODO: add ML modle
-            photo.description = ai_generated_description
-            db.session.commit()
-            flash('AI-Generated description added.', 'success')
+            image_path = os.path.join(current_app.config['ALBUMY_UPLOAD_PATH'], photo.filename) 
+            try:
+                with open(image_path, "rb") as image_file:
+                    image_data = image_file.read()
+                    description_result = client.analyze(
+                        image_data=image_data,
+                        visual_features=[VisualFeatures.CAPTION],
+                        gender_neutral_caption=True,
+                    )
+                    if description_result.caption is not None:
+                        ai_generated_description = description_result.caption.text
+                        photo.description = ai_generated_description
+                        db.session.commit()
+                        flash('AI-Generated description added.', 'success')
+                    else:
+                        flash(f"No AI description available")
+            except Exception as e:
+                flash(f"Failed to generate AI description: {str(e)}", "danger")
+            
 
     flash_errors(form)
     return redirect(url_for('.show_photo', photo_id=photo_id))
@@ -372,18 +389,31 @@ def new_tag(photo_id):
                     photo.tags.append(tag)
                     db.session.commit()
             flash('Tag added.', 'success')
-        elif form.use_ai_content.data:  
-            ai_generated_description = "tag1 tag2 tag3 tag4"  # TODO: add ML modle
-            for name in ai_generated_description.split():
-                tag = Tag.query.filter_by(name=name).first()
-                if tag is None:
-                    tag = Tag(name=name)
-                    db.session.add(tag)
-                    db.session.commit()
-                if tag not in photo.tags:
-                    photo.tags.append(tag)
-                    db.session.commit()
-            flash('AI-Generated tags added.', 'success')
+        # Automatic tagging
+        elif form.use_ai_content.data: 
+            image_path = os.path.join(current_app.config['ALBUMY_UPLOAD_PATH'], photo.filename) 
+            try: 
+                with open(image_path, "rb") as image_file:
+                    image_data = image_file.read()
+                    tags_result = client.analyze(
+                        image_data=image_data,
+                        visual_features=[VisualFeatures.TAGS],
+                        gender_neutral_caption=True,
+                    )
+                    if tags_result.tags is not None:
+                        ai_generated_tags = [tag.name for tag in tags_result.tags.list]
+                        for name in ai_generated_tags:
+                            tag = Tag.query.filter_by(name=name).first()
+                            if tag is None:
+                                tag = Tag(name=name)
+                                db.session.add(tag)
+                                db.session.commit()
+                            if tag not in photo.tags:
+                                photo.tags.append(tag)
+                                db.session.commit()
+                        flash('AI-Generated tags added.', 'success')
+            except Exception as e:
+                flash(f"Failed to generate AI tags", "danger")
 
     flash_errors(form)
     return redirect(url_for('.show_photo', photo_id=photo_id))
